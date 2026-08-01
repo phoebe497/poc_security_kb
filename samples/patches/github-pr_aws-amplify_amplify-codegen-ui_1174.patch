@@ -1,0 +1,619 @@
+From 614ad3d6b49c31d1a941254bbeb63bd431712483 Mon Sep 17 00:00:00 2001
+From: Ioana Brooks <tryioana@amazon.com>
+Date: Thu, 10 Apr 2025 12:09:49 -0700
+Subject: [PATCH 1/3] fix(codegen-ui-react): add sanitization to binding
+ expression
+
+---
+ ...react-component-render-helper.test.ts.snap |   6 +
+ .../react-component-render-helper.test.ts     | 276 ++++++++++++++++++
+ .../lib/react-component-render-helper.ts      | 118 +++++++-
+ .../codegen-ui-react/lib/utils/constants.ts   |  46 +++
+ 4 files changed, 436 insertions(+), 10 deletions(-)
+
+diff --git a/packages/codegen-ui-react/lib/__tests__/__snapshots__/react-component-render-helper.test.ts.snap b/packages/codegen-ui-react/lib/__tests__/__snapshots__/react-component-render-helper.test.ts.snap
+index 70f9e0221..2d1e37755 100644
+--- a/packages/codegen-ui-react/lib/__tests__/__snapshots__/react-component-render-helper.test.ts.snap
++++ b/packages/codegen-ui-react/lib/__tests__/__snapshots__/react-component-render-helper.test.ts.snap
+@@ -1,5 +1,11 @@
+ // Jest Snapshot v1, https://goo.gl/fbAQLP
+ 
++exports[`react-component-render-helper buildBindingExpression should generate snapshot for property with field 1`] = `"user?.address"`;
++
++exports[`react-component-render-helper buildBindingExpression should generate snapshot for property with nested field access 1`] = `"data?.nested.field"`;
++
++exports[`react-component-render-helper buildBindingExpression should generate snapshot for simple property 1`] = `"simpleProperty"`;
++
+ exports[`react-component-render-helper buildChildElement bound property 1`] = `
+ NodeObject {
+   "dotDotDotToken": undefined,
+diff --git a/packages/codegen-ui-react/lib/__tests__/react-component-render-helper.test.ts b/packages/codegen-ui-react/lib/__tests__/react-component-render-helper.test.ts
+index c179c35dd..9f012d014 100644
+--- a/packages/codegen-ui-react/lib/__tests__/react-component-render-helper.test.ts
++++ b/packages/codegen-ui-react/lib/__tests__/react-component-render-helper.test.ts
+@@ -20,6 +20,7 @@ import {
+   ComponentMetadata,
+   ConcatenatedStudioComponentProperty,
+ } from '@aws-amplify/codegen-ui';
++import { factory } from 'typescript';
+ import {
+   getFixedComponentPropValueExpression,
+   getComponentPropName,
+@@ -36,6 +37,10 @@ import {
+   hasChildrenProp,
+   buildConcatExpression,
+   parseNumberOperand,
++  getStateName,
++  escapePropertyValue,
++  buildBindingExpression,
++  filterScriptingPatterns,
+ } from '../react-component-render-helper';
+ 
+ import { assertASTMatchesSnapshot } from './__utils__';
+@@ -357,4 +362,275 @@ describe('react-component-render-helper', () => {
+       );
+     });
+   });
++
++  describe('getStateName', () => {
++    it('should correctly format state name by combining component name and property', () => {
++      const stateReference = {
++        componentName: 'UserProfile',
++        property: 'firstName',
++      };
++
++      const result = getStateName(stateReference);
++
++      expect(result).toBe('userProfileFirstName');
++    });
++
++    it('should handle single word component names and properties', () => {
++      const stateReference = {
++        componentName: 'Button',
++        property: 'active',
++      };
++
++      const result = getStateName(stateReference);
++
++      expect(result).toBe('buttonActive');
++    });
++
++    it('should handle empty strings', () => {
++      const stateReference = {
++        componentName: '',
++        property: '',
++      };
++
++      const result = getStateName(stateReference);
++
++      expect(result).toBe('');
++    });
++
++    it('should handle special characters if sanitizeName is implemented', () => {
++      const stateReference = {
++        componentName: 'User$Profile',
++        property: 'first@Name',
++      };
++
++      const result = getStateName(stateReference);
++
++      expect(result).toBe('userDollarProfileFirstAtSymbolName');
++    });
++  });
++
++  describe('sanitizeString', () => {
++    it('should keep alphanumeric characters', () => {
++      expect(filterScriptingPatterns('abc123')).toBe('abc123');
++      expect(filterScriptingPatterns('ABC789')).toBe('ABC789');
++    });
++
++    it('should keep allowed special characters', () => {
++      expect(filterScriptingPatterns('hello.world')).toBe('hello.world');
++      expect(filterScriptingPatterns('first,second')).toBe('first,second');
++      expect(filterScriptingPatterns('under_score')).toBe('under_score');
++      expect(filterScriptingPatterns('dash-here')).toBe('dash-here');
++    });
++
++    it('should remove disallowed special characters', () => {
++      expect(filterScriptingPatterns('hello@world')).toBe('hello@world');
++      expect(filterScriptingPatterns('test#123')).toBe('test#123');
++      expect(filterScriptingPatterns('special!chars')).toBe('special!chars');
++      expect(filterScriptingPatterns('remove$signs')).toBe('remove$signs');
++    });
++
++    it('should handle spaces correctly', () => {
++      expect(filterScriptingPatterns('hello world')).toBe('hello world');
++      expect(filterScriptingPatterns('  extra spaces  ')).toBe('extra spaces');
++      expect(filterScriptingPatterns('\ttab\nspace')).toBe('tab\nspace');
++    });
++
++    it('should handle eval strings', () => {
++      expect(filterScriptingPatterns("eval('if(!window.x){alert(document.domain);window.x=1}')")).toBe('');
++      // eslint-disable-next-line no-script-url
++      expect(filterScriptingPatterns('javascript:alert(1)')).toBe('');
++    });
++
++    it('should handle empty strings', () => {
++      expect(filterScriptingPatterns('')).toBe('');
++      expect(filterScriptingPatterns('   ')).toBe('');
++    });
++
++    it('should handle non-string inputs', () => {
++      expect(filterScriptingPatterns(null as any)).toBe('');
++      expect(filterScriptingPatterns(undefined as any)).toBe('');
++      expect(filterScriptingPatterns(123 as any)).toBe('');
++      expect(filterScriptingPatterns({} as any)).toBe('');
++      expect(filterScriptingPatterns([] as any)).toBe('');
++    });
++
++    it('should handle mixed content correctly', () => {
++      expect(filterScriptingPatterns('Hello, World! @ #123')).toBe('Hello, World! @ #123');
++      expect(filterScriptingPatterns('user.name@domain.com')).toBe('user.name@domain.com');
++      expect(filterScriptingPatterns('path/to/file.txt')).toBe('path/to/file.txt');
++    });
++
++    it('should preserve multiple allowed special characters', () => {
++      expect(filterScriptingPatterns('item1,item2.item3-item4_item5')).toBe('item1,item2.item3-item4_item5');
++    });
++
++    it('should handle unicode characters', () => {
++      expect(filterScriptingPatterns('héllo wörld')).toBe('héllo wörld');
++      expect(filterScriptingPatterns('←↑→↓')).toBe('←↑→↓');
++      expect(filterScriptingPatterns('🌟star')).toBe('🌟star');
++    });
++
++    it('should handle complex combinations', () => {
++      const complexInput = `
++        Hello! This is a "complex" test-case...
++        With @multiple# lines & special chars.
++        123_456-789.000
++      `;
++
++      expect(filterScriptingPatterns(complexInput)).toBe(
++        `Hello! This is a "complex" test-case...
++        With @multiple# lines & special chars.
++        123_456-789.000`,
++      );
++    });
++  });
++
++  describe('escapePropertyName', () => {
++    describe('Reserved Keywords', () => {
++      it('should append "Prop" to JavaScript reserved keywords', () => {
++        expect(escapePropertyValue('class')).toBe('classProp');
++        expect(escapePropertyValue('function')).toBe('functionProp');
++        expect(escapePropertyValue('var')).toBe('varProp');
++      });
++
++      it('should not modify non-reserved words', () => {
++        expect(escapePropertyValue('user')).toBe('user');
++        expect(escapePropertyValue('name')).toBe('name');
++        expect(escapePropertyValue('address')).toBe('address');
++      });
++    });
++
++    describe('Sanitization', () => {
++      it('should sanitize invalid JavaScript identifiers', () => {
++        expect(escapePropertyValue('user-name')).toBe('user-name');
++        expect(escapePropertyValue('first.last')).toBe('first.last');
++        expect(escapePropertyValue('special@char')).toBe('special@char');
++      });
++
++      it('should handle spaces in property names', () => {
++        expect(escapePropertyValue('first name')).toBe('first name');
++        expect(escapePropertyValue('  spaced  ')).toBe('spaced');
++      });
++
++      it('should preserve valid characters', () => {
++        expect(escapePropertyValue('validName123')).toBe('validName123');
++        expect(escapePropertyValue('_privateVar')).toBe('_privateVar');
++        expect(escapePropertyValue('$specialVar')).toBe('$specialVar');
++      });
++    });
++  });
++
++  describe('buildBindingExpression', () => {
++    it('should return an empty string with dangerous text', () => {
++      const propertyValue = "eval('if(!window.x){alert(document.domain);window.x=1}')";
++      const prop = {
++        bindingProperties: {
++          property: propertyValue,
++        },
++      };
++
++      const result = buildBindingExpression(prop);
++
++      expect((result as any).text).toBe('');
++    });
++
++    it('should create property access chain for data attributes', () => {
++      const prop = {
++        bindingProperties: {
++          property: 'value',
++          field: 'data-test',
++        },
++      };
++
++      const result = buildBindingExpression(prop);
++
++      expect(result.kind).toBe(204);
++      expect((result as any).name.escapedText).toBe('data-test');
++    });
++
++    it('should return original string containing similar, but not dangerous text', () => {
++      const propertyValue = 'evaluate if window alert document domain window';
++      const prop = {
++        bindingProperties: {
++          property: propertyValue,
++        },
++      };
++
++      const result = buildBindingExpression(prop);
++
++      expect((result as any).text).toBe(propertyValue);
++    });
++
++    it('should create a simple identifier when no field is present', () => {
++      const prop = {
++        bindingProperties: {
++          property: 'userName',
++        },
++      };
++
++      const result = buildBindingExpression(prop);
++
++      // Check that it's an identifier with the correct text
++      expect(result.kind).toBe(factory.createIdentifier('').kind);
++      expect((result as any).text).toBe('userName');
++    });
++
++    it('should handle reserved JavaScript keywords in property names', () => {
++      const prop = {
++        bindingProperties: {
++          property: 'class', // 'class' is a reserved keyword
++        },
++      };
++
++      const result = buildBindingExpression(prop);
++
++      // Should be escaped as 'classProp'
++      expect((result as any).text).toBe('classProp');
++    });
++
++    it('should sanitize invalid characters in property names', () => {
++      const prop = {
++        bindingProperties: {
++          property: 'user@name!',
++        },
++      };
++
++      const result = buildBindingExpression(prop);
++
++      // Should be sanitized
++      expect((result as any).text).toBe('user@name!');
++    });
++
++    it('should generate snapshot for simple property', () => {
++      const prop = {
++        bindingProperties: {
++          property: 'simpleProperty',
++        },
++      };
++
++      assertASTMatchesSnapshot(buildBindingExpression(prop));
++    });
++
++    it('should generate snapshot for property with field', () => {
++      const prop = {
++        bindingProperties: {
++          property: 'user',
++          field: 'address',
++        },
++      };
++
++      assertASTMatchesSnapshot(buildBindingExpression(prop));
++    });
++
++    it('should generate snapshot for property with nested field access', () => {
++      const prop = {
++        bindingProperties: {
++          property: 'data',
++          field: 'nested.field',
++        },
++      };
++
++      assertASTMatchesSnapshot(buildBindingExpression(prop));
++    });
++  });
+ });
+diff --git a/packages/codegen-ui-react/lib/react-component-render-helper.ts b/packages/codegen-ui-react/lib/react-component-render-helper.ts
+index 630456c8e..257014f03 100644
+--- a/packages/codegen-ui-react/lib/react-component-render-helper.ts
++++ b/packages/codegen-ui-react/lib/react-component-render-helper.ts
+@@ -65,6 +65,7 @@ import { getChildPropMappingForComponentName } from './workflow/utils';
+ import nameReplacements from './name-replacements';
+ import keywords from './keywords';
+ import { buildAccessChain } from './forms/form-renderer-helper/form-state';
++import { scriptingPatterns } from './utils/constants';
+ 
+ export function getFixedComponentPropValueExpression(prop: FixedStudioComponentProperty): StringLiteral {
+   return factory.createStringLiteral(prop.value.toString(), true);
+@@ -128,21 +129,118 @@ export function isActionEvent(event: StudioComponentEvent): event is ActionStudi
+ }
+ 
+ /**
+- * case: has field => <prop.bindingProperties.property>?.<prop.bindingProperties.field>
+- * case: no field =>  <prop.bindingProperties.property>
++ * Validates a string against known dangerous JavaScript patterns and security vulnerabilities.
++ * https://t.corp.amazon.com/P216078244
++ *
++ * This function checks for various potentially malicious patterns including:
++ * - Dangerous JavaScript functions (eval, Function constructor, setTimeout, etc.)
++ * - DOM manipulation attempts
++ * - Event handler injections
++ * - Dangerous URL protocols
++ * - Script tag variations
++ * - SVG exploit attempts
++ * - Prototype pollution patterns
++ * - Template literal injection attempts
++ *
++ * @param {string} str - The input string to validate
++ * @returns {string} Returns an empty string if dangerous patterns are found, otherwise returns the trimmed input string
++ *
++ * @example
++ * // Safe string
++ * filterScriptingPatterns("Hello World"); // returns "Hello World"
++ *
++ * // Dangerous string
++ * filterScriptingPatterns("eval('alert(1)')"); // returns ""
++ */
++export function filterScriptingPatterns(str: string): string {
++  if (typeof str !== 'string') {
++    return '';
++  }
++
++  // Check for dangerous JavaScript patterns
++  if (scriptingPatterns.some((pattern) => pattern.test(str))) {
++    return '';
++  }
++
++  return str.trim();
++}
++
++/**
++ * Sanitizes and validates property values to ensure they are safe JavaScript identifiers.
++ *
++ * @param {string} propertyValue - The property value to be escaped/sanitized
++ * @returns {string} A safe JavaScript identifier:
++ *                   - Returns "{propertyValue}Prop" if the value is a reserved keyword
++ *                   - Returns sanitized value after filtering scripting patterns
++ *
++ * @example
++ * // Reserved keyword example
++ * escapePropertyValue('class') // returns 'classProp'
++ *
++ * // Normal property
++ * escapePropertyValue('userName') // returns 'userName'
++ */
++export function escapePropertyValue(propertyValue: string): string {
++  // First check if it's a reserved keyword
++  if (keywords.has(propertyValue)) {
++    return `${propertyValue}Prop`;
++  }
++
++  // Then sanitize the propery value to ensure it's a valid JavaScript identifier
++  return filterScriptingPatterns(propertyValue);
++}
++
++/**
++ * Builds a TypeScript expression for property binding in the
++ * UI component generation proces.
++ *
++ * Creates either:
++ * 1. An identifier
++ * 2. An optional chained property access
++ *
++ * @param {BoundStudioComponentProperty} prop - The bound property configuration object
++ *
++ * @returns {Expression} Returns one of:
++ * - Identifier: When no field is specified
++ * - PropertyAccessChain: When accessing a nested field with optional chaining
++ *
++ *  {
++ *    "componentType": "Button",
++ *    "name": "MyButton",
++ *    "properties": {
++ *      "disabled": {
++ *        "bindingProperties": {
++ *          "property": "eval('if(!window.x){alert(document.domain);window.x=1}')"
++ *        }
++ *      }
++ *    }
++ *  }
++ *
++ * @see {factory} NodeFactory https://github.com/microsoft/TypeScript/blob/main/src/compiler/factory/nodeFactory.ts
++ * - createIdentifer
++ *   https://github.com/microsoft/TypeScript/blob/main/src/compiler/factory/nodeFactory.ts#L1325
++ * - createPropertyAccessChain
++ *   https://github.com/microsoft/TypeScript/blob/main/src/compiler/factory/nodeFactory.ts#L2929
+  */
+ export function buildBindingExpression(prop: BoundStudioComponentProperty): Expression {
+   const {
+     bindingProperties: { property },
+   } = prop;
+-  const identifier = factory.createIdentifier(keywords.has(property) ? `${property}Prop` : property);
+-  return prop.bindingProperties.field === undefined
+-    ? identifier
+-    : factory.createPropertyAccessChain(
+-        identifier,
+-        factory.createToken(SyntaxKind.QuestionDotToken),
+-        prop.bindingProperties.field,
+-      );
++
++  const escapedPropertyValue = escapePropertyValue(property);
++  const identifier = factory.createIdentifier(escapedPropertyValue);
++
++  if (prop.bindingProperties.field === undefined) {
++    return identifier;
++  }
++
++  const propertyAccess = factory.createPropertyAccessChain(
++    identifier,
++    factory.createToken(SyntaxKind.QuestionDotToken),
++    prop.bindingProperties.field,
++  );
++
++  return propertyAccess;
+ }
+ 
+ export function buildBindingAttr(prop: BoundStudioComponentProperty, propName: string): JsxAttribute {
+diff --git a/packages/codegen-ui-react/lib/utils/constants.ts b/packages/codegen-ui-react/lib/utils/constants.ts
+index 3ca88f809..5e7cc56d8 100644
+--- a/packages/codegen-ui-react/lib/utils/constants.ts
++++ b/packages/codegen-ui-react/lib/utils/constants.ts
+@@ -22,3 +22,49 @@ export const STORAGE_FILE_ALGO_TYPE = 'SHA-1';
+ export const AMPLIFY_JS_V5 = '5.0.0';
+ 
+ export const AMPLIFY_JS_V6 = '6.0.0';
++
++export const scriptingPatterns = [
++  // JavaScript functions
++  /eval\s*\(/i,
++  /Function\s*\(/i,
++  /setTimeout\s*\(/i,
++  /setInterval\s*\(/i,
++  /new\s+Function/i,
++  /import\s*\(/i,
++  /require\s*\(/i,
++
++  // DOM manipulation
++  /document\./i,
++  /window\./i,
++  /location\./i,
++  /localStorage\./i,
++  /sessionStorage\./i,
++
++  // Event handlers
++  /on\w+\s*=/i, // matches onerror=, onload=, etc.
++
++  // Dangerous protocols
++  /javascript:/i,
++  /data:/i,
++  /vbscript:/i,
++
++  // Script tags and variations
++  /<script/i,
++  /<\/script/i,
++  /<x:script/i,
++
++  // SVG exploits
++  /<svg/i,
++  /xlink:href/i,
++
++  // Object prototype attacks
++  /\[\s*Symbol\s*\./i,
++  /__proto__/i,
++  /prototype\s*\./i,
++
++  // Template literal attacks
++  /\$\{/i,
++
++  // Base64 indicators
++  /base64/i,
++];
+
+From 28c12520e01c3f55f078a4c698ace712cd786fad Mon Sep 17 00:00:00 2001
+From: Ioana Brooks <tryioana@amazon.com>
+Date: Thu, 10 Apr 2025 14:15:38 -0700
+Subject: [PATCH 2/3] fix: address comments
+
+---
+ .../codegen-ui-react/lib/react-component-render-helper.ts  | 7 -------
+ packages/codegen-ui-react/lib/utils/constants.ts           | 2 --
+ 2 files changed, 9 deletions(-)
+
+diff --git a/packages/codegen-ui-react/lib/react-component-render-helper.ts b/packages/codegen-ui-react/lib/react-component-render-helper.ts
+index 257014f03..8605f50bc 100644
+--- a/packages/codegen-ui-react/lib/react-component-render-helper.ts
++++ b/packages/codegen-ui-react/lib/react-component-render-helper.ts
+@@ -129,9 +129,6 @@ export function isActionEvent(event: StudioComponentEvent): event is ActionStudi
+ }
+ 
+ /**
+- * Validates a string against known dangerous JavaScript patterns and security vulnerabilities.
+- * https://t.corp.amazon.com/P216078244
+- *
+  * This function checks for various potentially malicious patterns including:
+  * - Dangerous JavaScript functions (eval, Function constructor, setTimeout, etc.)
+  * - DOM manipulation attempts
+@@ -153,10 +150,6 @@ export function isActionEvent(event: StudioComponentEvent): event is ActionStudi
+  * filterScriptingPatterns("eval('alert(1)')"); // returns ""
+  */
+ export function filterScriptingPatterns(str: string): string {
+-  if (typeof str !== 'string') {
+-    return '';
+-  }
+-
+   // Check for dangerous JavaScript patterns
+   if (scriptingPatterns.some((pattern) => pattern.test(str))) {
+     return '';
+diff --git a/packages/codegen-ui-react/lib/utils/constants.ts b/packages/codegen-ui-react/lib/utils/constants.ts
+index 5e7cc56d8..4b66734ed 100644
+--- a/packages/codegen-ui-react/lib/utils/constants.ts
++++ b/packages/codegen-ui-react/lib/utils/constants.ts
+@@ -37,8 +37,6 @@ export const scriptingPatterns = [
+   /document\./i,
+   /window\./i,
+   /location\./i,
+-  /localStorage\./i,
+-  /sessionStorage\./i,
+ 
+   // Event handlers
+   /on\w+\s*=/i, // matches onerror=, onload=, etc.
+
+From a0d01e447ea786cf66aa182ae3b6764348fb5dbe Mon Sep 17 00:00:00 2001
+From: Ioana Brooks <tryioana@amazon.com>
+Date: Thu, 10 Apr 2025 14:25:11 -0700
+Subject: [PATCH 3/3] fix: address comments
+
+---
+ .../lib/__tests__/react-component-render-helper.test.ts      | 5 +----
+ .../codegen-ui-react/lib/react-component-render-helper.ts    | 2 ++
+ 2 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/packages/codegen-ui-react/lib/__tests__/react-component-render-helper.test.ts b/packages/codegen-ui-react/lib/__tests__/react-component-render-helper.test.ts
+index 9f012d014..828da7c72 100644
+--- a/packages/codegen-ui-react/lib/__tests__/react-component-render-helper.test.ts
++++ b/packages/codegen-ui-react/lib/__tests__/react-component-render-helper.test.ts
+@@ -409,7 +409,7 @@ describe('react-component-render-helper', () => {
+     });
+   });
+ 
+-  describe('sanitizeString', () => {
++  describe('filterScriptingPatterns', () => {
+     it('should keep alphanumeric characters', () => {
+       expect(filterScriptingPatterns('abc123')).toBe('abc123');
+       expect(filterScriptingPatterns('ABC789')).toBe('ABC789');
+@@ -449,9 +449,6 @@ describe('react-component-render-helper', () => {
+     it('should handle non-string inputs', () => {
+       expect(filterScriptingPatterns(null as any)).toBe('');
+       expect(filterScriptingPatterns(undefined as any)).toBe('');
+-      expect(filterScriptingPatterns(123 as any)).toBe('');
+-      expect(filterScriptingPatterns({} as any)).toBe('');
+-      expect(filterScriptingPatterns([] as any)).toBe('');
+     });
+ 
+     it('should handle mixed content correctly', () => {
+diff --git a/packages/codegen-ui-react/lib/react-component-render-helper.ts b/packages/codegen-ui-react/lib/react-component-render-helper.ts
+index 8605f50bc..55b7c5d90 100644
+--- a/packages/codegen-ui-react/lib/react-component-render-helper.ts
++++ b/packages/codegen-ui-react/lib/react-component-render-helper.ts
+@@ -150,6 +150,8 @@ export function isActionEvent(event: StudioComponentEvent): event is ActionStudi
+  * filterScriptingPatterns("eval('alert(1)')"); // returns ""
+  */
+ export function filterScriptingPatterns(str: string): string {
++  if (!str) return '';
++
+   // Check for dangerous JavaScript patterns
+   if (scriptingPatterns.some((pattern) => pattern.test(str))) {
+     return '';

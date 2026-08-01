@@ -1,0 +1,28 @@
+{
+  "dataset_type": "curated_real_security_evidence",
+  "source_files": [
+    "data/processed/github_evidence.jsonl",
+    "data/processed/codeql_models.jsonl"
+  ],
+  "github_evidence_count": 6,
+  "github_evidence_types": {
+    "patch_diff": 2,
+    "pull_request_patch": 1,
+    "proof_of_concept": 2,
+    "issue_evidence": 1
+  },
+  "codeql_model_count": 13,
+  "codeql_model_groups": {
+    "sink": 3,
+    "source": 3,
+    "propagator": 3,
+    "sanitizer_or_barrier": 2,
+    "sanitizer_or_guard": 2
+  },
+  "patch_files": [
+    "patches/github-commit_aws-amplify_amplify-codegen-ui_ca98c38b7c3d69ae7c94d2f62b51e32e8165dae6.patch",
+    "patches/github-pr_aws-amplify_amplify-codegen-ui_1174.patch",
+    "patches/github-commit_rails_rails_1c01bb587206ee6eb0e1179c2cef96a6a47acb1e.patch"
+  ],
+  "safety": "Evidence text only; never execute PoC or downloaded code."
+}

@@ -1,0 +1,387 @@
+From 1c01bb587206ee6eb0e1179c2cef96a6a47acb1e Mon Sep 17 00:00:00 2001
+From: Mike Dalessio <mike.dalessio@gmail.com>
+Date: Mon, 27 Jul 2026 20:12:22 -0400
+Subject: [PATCH] Disable libvips's unfuzzed image loaders and savers
+
+libvips flags some of its loaders and savers as "unfuzzed" or "untrusted",
+meaning they are only safe for trusted content. `image_processing` 2.0 disables
+them when it loads, but as of 1fc6efcd (8.2 edge) Active Storage re-enabled
+them, so both the Vips analyzer and the Vips transformer passed untrusted
+attachments to them.
+
+Active Storage will call `Vips.block_untrusted(true)` to disable them while
+booting. An application that needs a specific loader or saver may re-enable it
+in an initializer.
+
+This is a breaking change for applications that process image types with an
+unfuzzed loader or saver. Variant transformation of BMP, ICO, and PSD
+attachments will raise `Vips::Error`, and analysis of these and other types such
+as SVG, JPEG XL, JPEG 2000, and Netpbm will no longer record `width` and
+`height`. Requesting an unfuzzed output format, typically FITS, JXL, or anything
+delegated to ImageMagick, will also raise `Vips::Error`. Attaching, storing, and
+downloading are unchanged.
+
+Applications using the `:mini_magick` variant processor will see no change in
+how their attachments are processed, but the loaders and savers will be disabled
+process-wide whenever ruby-vips is installed, and the version requirements below
+will still apply. Such an application may remove ruby-vips from its Gemfile to
+avoid both.
+
+The minimum supported version of libvips is now 8.13, and the minimum supported
+version of ruby-vips is now 2.2.1. These are the earliest versions that are
+capable of disabling untrusted operations. When ruby-vips is installed and
+either minimum is not met, Active Storage will raise a `RuntimeError` while
+booting rather than run in an unsecurable environment.
+
+[GHSA-xr9x-r78c-5hrm]
+[CVE-2026-66066]
+---
+ activestorage/CHANGELOG.md                    | 42 +++++++++++
+ .../analyzer/image_analyzer/vips.rb           |  2 +
+ activestorage/lib/active_storage/vips.rb      | 42 +++++++++++
+ .../test/analyzer/image_analyzer/vips_test.rb | 19 ++++-
+ activestorage/test/models/variant_test.rb     | 75 +++++++++++++------
+ activestorage/test/test_helper.rb             | 27 +++++++
+ guides/source/active_storage_overview.md      | 45 +++++++++++
+ 7 files changed, 228 insertions(+), 24 deletions(-)
+ create mode 100644 activestorage/lib/active_storage/vips.rb
+
+diff --git a/activestorage/CHANGELOG.md b/activestorage/CHANGELOG.md
+index d09ac19a02432..71bf409506cf7 100644
+--- a/activestorage/CHANGELOG.md
++++ b/activestorage/CHANGELOG.md
+@@ -1,3 +1,45 @@
++*   Disable libvips's unfuzzed image loaders and savers.
++
++    libvips flags some of its loaders and savers as "unfuzzed" or "untrusted", meaning they are only
++    safe for trusted content. Active Storage will call `Vips.block_untrusted(true)` to disable them
++    while booting. An application that needs a specific loader or saver may re-enable it in an
++    initializer.
++
++    This is a breaking change for applications that process image types with an unfuzzed loader or
++    saver. Variant transformation of BMP, ICO, and PSD attachments will raise `Vips::Error`, and
++    analysis of these and other types such as SVG, JPEG XL, JPEG 2000, and Netpbm will no longer
++    record `width` and `height`. Requesting an unfuzzed output format, typically FITS, JXL, or
++    anything delegated to ImageMagick, will also raise `Vips::Error`. Attaching, storing, and
++    downloading are unchanged.
++
++    An application seeing `Vips::Error` raised during image transformation may wish to remove the
++    affected content types from `config.active_storage.variable_content_types` in an initializer.
++    Active Storage will then treat those attachments as not variable and will not generate variants
++    for them. This most often matters to an application that transforms images during a request
++    rather than in a background job, where the failure surfaces as an error response instead of a
++    failed job.
++
++    ```ruby
++    Rails.application.config.active_storage.variable_content_types -=
++      %w[ image/bmp image/vnd.microsoft.icon image/vnd.adobe.photoshop ]
++    ```
++
++    Applications using the `:mini_magick` variant processor will see no change in how their
++    attachments are processed, but the loaders and savers will be disabled process-wide whenever
++    ruby-vips is installed, and the version requirements below will still apply. Such an application
++    may remove ruby-vips from its Gemfile to avoid both.
++
++    The minimum supported version of libvips is now 8.13, and the minimum supported version of
++    ruby-vips is now 2.2.1. These are the earliest versions that are capable of disabling untrusted
++    operations. When ruby-vips is installed and either minimum is not met, Active Storage will raise
++    a `RuntimeError` while booting rather than run in an unsecurable environment.
++
++    [GHSA-xr9x-r78c-5hrm]
++    [CVE-2026-66066]
++
++    *Mike Dalessio*
++
++
+ ## Rails 8.0.5 (March 24, 2026) ##
+ 
+ *   Fix `ActiveStorage::Blob` content type predicate methods to handle `nil`.
+diff --git a/activestorage/lib/active_storage/analyzer/image_analyzer/vips.rb b/activestorage/lib/active_storage/analyzer/image_analyzer/vips.rb
+index 7e682b3b75fda..e262e1a842aa4 100644
+--- a/activestorage/lib/active_storage/analyzer/image_analyzer/vips.rb
++++ b/activestorage/lib/active_storage/analyzer/image_analyzer/vips.rb
+@@ -1,5 +1,7 @@
+ # frozen_string_literal: true
+ 
++require "active_storage/vips"
++
+ module ActiveStorage
+   # This analyzer relies on the third-party {ruby-vips}[https://github.com/libvips/ruby-vips] gem. Ruby-vips requires
+   # the {libvips}[https://libvips.github.io/libvips/] system library.
+diff --git a/activestorage/lib/active_storage/vips.rb b/activestorage/lib/active_storage/vips.rb
+new file mode 100644
+index 0000000000000..16b2ddbfbaad1
+--- /dev/null
++++ b/activestorage/lib/active_storage/vips.rb
+@@ -0,0 +1,42 @@
++# frozen_string_literal: true
++
++require "active_storage"
++require "active_support/core_ext/string/filters"
++
++begin
++  require "nokogiri"
++rescue LoadError
++  # Ensure nokogiri is loaded before vips, which also depends on libxml2.
++  # See Nokogiri RFC: Stop exporting symbols:
++  #   https://github.com/sparklemotion/nokogiri/discussions/2746
++end
++
++begin
++  gem "ruby-vips"
++  require "ruby-vips"
++  ActiveStorage::VIPS_AVAILABLE = true # :nodoc:
++rescue LoadError => error
++  ActiveStorage::VIPS_AVAILABLE = false # :nodoc:
++  raise error unless error.message.match?(/libvips|ruby-vips/)
++end
++
++if ActiveStorage::VIPS_AVAILABLE
++  begin
++    # image_processing 2.0 calls Vips.block_untrusted(true) itself when it loads, so it has to load
++    # before the lines below. Leaving it to load later, when the transformer first asks for it,
++    # would disable the loaders again after an application's initializers had re-enabled them.
++    require "image_processing/vips"
++  rescue LoadError
++    # image_processing is only needed to generate variants, not to analyze blobs.
++  end
++
++  unless Vips.respond_to?(:block_untrusted)
++    raise <<~ERROR.squish
++      libvips's unfuzzed operations are not safe to use with untrusted content, and Active Storage
++      cannot disable them. Disabling them requires libvips 8.13 or later and ruby-vips 2.2.1 or
++      later. Please upgrade libvips and ruby-vips, or remove the ruby-vips gem from your Gemfile.
++    ERROR
++  end
++
++  Vips.block_untrusted(true)
++end
+diff --git a/activestorage/test/analyzer/image_analyzer/vips_test.rb b/activestorage/test/analyzer/image_analyzer/vips_test.rb
+index d089c938ac77e..085e2901c0ee7 100644
+--- a/activestorage/test/analyzer/image_analyzer/vips_test.rb
++++ b/activestorage/test/analyzer/image_analyzer/vips_test.rb
+@@ -26,13 +26,26 @@ class ActiveStorage::Analyzer::ImageAnalyzer::VipsTest < ActiveSupport::TestCase
+     end
+   end
+ 
+-  test "analyzing an SVG image without an XML declaration" do
++  test "analyzing an SVG image without an XML declaration is skipped because the SVG loader is disabled by default" do
+     analyze_with_vips do
+       blob = create_file_blob(filename: "icon.svg", content_type: "image/svg+xml")
+       metadata = extract_metadata_from(blob)
+ 
+-      assert_equal 792, metadata[:width]
+-      assert_equal 584, metadata[:height]
++      assert_nil metadata[:width]
++      assert_nil metadata[:height]
++    end
++  end
++
++  test "analyzing an SVG image without an XML declaration when the SVG loader is enabled" do
++    analyze_with_vips do
++      blob = create_file_blob(filename: "icon.svg", content_type: "image/svg+xml")
++
++      with_vips_loaders_enabled(*VIPS_SVG_LOADERS) do
++        metadata = extract_metadata_from(blob)
++
++        assert_equal 792, metadata[:width]
++        assert_equal 584, metadata[:height]
++      end
+     end
+   end
+ 
+diff --git a/activestorage/test/models/variant_test.rb b/activestorage/test/models/variant_test.rb
+index 81a6041190d63..0a465553f196f 100644
+--- a/activestorage/test/models/variant_test.rb
++++ b/activestorage/test/models/variant_test.rb
+@@ -70,26 +70,48 @@ class ActiveStorage::VariantTest < ActiveSupport::TestCase
+     assert_equal 100, image.height
+   end
+ 
+-  test "resized variation of PSD blob" do
++  test "resized variation of PSD blob raises because the ImageMagick loader is disabled by default" do
+     blob = create_file_blob(filename: "icon.psd", content_type: "image/vnd.adobe.photoshop")
+-    variant = blob.variant(resize_to_limit: [20, 20]).processed
+-    assert_match(/icon\.png/, variant.url)
+ 
+-    image = read_image(variant)
+-    assert_equal "PNG", image.type
+-    assert_equal 20, image.width
+-    assert_equal 20, image.height
++    assert_raises(Vips::Error) do
++      blob.variant(resize_to_limit: [20, 20]).processed
++    end
+   end
+ 
+-  test "resized variation of ICO blob" do
++  test "resized variation of PSD blob when the ImageMagick loader is enabled" do
++    blob = create_file_blob(filename: "icon.psd", content_type: "image/vnd.adobe.photoshop")
++
++    with_vips_loaders_enabled(*VIPS_MAGICK_LOADERS) do
++      variant = blob.variant(resize_to_limit: [20, 20]).processed
++      assert_match(/icon\.png/, variant.url)
++
++      image = read_image(variant)
++      assert_equal "PNG", image.type
++      assert_equal 20, image.width
++      assert_equal 20, image.height
++    end
++  end
++
++  test "resized variation of ICO blob raises because the ImageMagick loader is disabled by default" do
+     blob = create_file_blob(filename: "favicon.ico", content_type: "image/vnd.microsoft.icon")
+-    variant = blob.variant(resize_to_limit: [20, 20]).processed
+-    assert_match(/icon\.png/, variant.url)
+ 
+-    image = read_image(variant)
+-    assert_equal "PNG", image.type
+-    assert_equal 20, image.width
+-    assert_equal 20, image.height
++    assert_raises(Vips::Error) do
++      blob.variant(resize_to_limit: [20, 20]).processed
++    end
++  end
++
++  test "resized variation of ICO blob when the ImageMagick loader is enabled" do
++    blob = create_file_blob(filename: "favicon.ico", content_type: "image/vnd.microsoft.icon")
++
++    with_vips_loaders_enabled(*VIPS_MAGICK_LOADERS) do
++      variant = blob.variant(resize_to_limit: [20, 20]).processed
++      assert_match(/icon\.png/, variant.url)
++
++      image = read_image(variant)
++      assert_equal "PNG", image.type
++      assert_equal 20, image.width
++      assert_equal 20, image.height
++    end
+   end
+ 
+   test "resized variation of TIFF blob" do
+@@ -103,15 +125,26 @@ class ActiveStorage::VariantTest < ActiveSupport::TestCase
+     assert_equal 33, image.height
+   end
+ 
+-  test "resized variation of BMP blob" do
++  test "resized variation of BMP blob raises because the ImageMagick loader is disabled by default" do
+     blob = create_file_blob(filename: "colors.bmp", content_type: "image/bmp")
+-    variant = blob.variant(resize_to_limit: [15, 15]).processed
+-    assert_match(/colors\.png/, variant.url)
+ 
+-    image = read_image(variant)
+-    assert_equal "PNG", image.type
+-    assert_equal 15, image.width
+-    assert_equal 8, image.height
++    assert_raises(Vips::Error) do
++      blob.variant(resize_to_limit: [15, 15]).processed
++    end
++  end
++
++  test "resized variation of BMP blob when the ImageMagick loader is enabled" do
++    blob = create_file_blob(filename: "colors.bmp", content_type: "image/bmp")
++
++    with_vips_loaders_enabled(*VIPS_MAGICK_LOADERS) do
++      variant = blob.variant(resize_to_limit: [15, 15]).processed
++      assert_match(/colors\.png/, variant.url)
++
++      image = read_image(variant)
++      assert_equal "PNG", image.type
++      assert_equal 15, image.width
++      assert_equal 8, image.height
++    end
+   end
+ 
+   test "resized variation of WEBP blob" do
+diff --git a/activestorage/test/test_helper.rb b/activestorage/test/test_helper.rb
+index f2e1323e9b023..8c24350ba7919 100644
+--- a/activestorage/test/test_helper.rb
++++ b/activestorage/test/test_helper.rb
+@@ -87,6 +87,33 @@ def with_service(service_name)
+       ActiveStorage::Blob.service = previous_service
+     end
+ 
++    # libvips names its ImageMagick loader after the major version it was built
++    # against, and Vips.block does nothing for a name it cannot find, so pass both.
++    VIPS_MAGICK_LOADERS = %w( VipsForeignLoadMagick VipsForeignLoadMagick7 ).freeze
++    VIPS_SVG_LOADERS = %w( VipsForeignLoadSvg ).freeze
++
++    # libvips can set an operation's blocked state but not read it, so probe once here, before any
++    # test has had the chance to change it, by opening a file that only an unfuzzed loader reads.
++    VIPS_LOADERS_DISABLED_AT_BOOT =
++      if defined?(::Vips)
++        begin
++          ::Vips::Image.new_from_file(File.expand_path("fixtures/files/colors.bmp", __dir__))
++          false
++        rescue ::Vips::Error
++          true
++        end
++      else
++        true
++      end
++
++    def with_vips_loaders_enabled(*class_names)
++      class_names.each { |class_name| Vips.block(class_name, false) }
++
++      yield
++    ensure
++      class_names.each { |class_name| Vips.block(class_name, VIPS_LOADERS_DISABLED_AT_BOOT) }
++    end
++
+     def with_strict_loading_by_default(&block)
+       strict_loading_was = ActiveRecord::Base.strict_loading_by_default
+       ActiveRecord::Base.strict_loading_by_default = true
+diff --git a/guides/source/active_storage_overview.md b/guides/source/active_storage_overview.md
+index 13e88abb2f4e1..8411ba37ade48 100644
+--- a/guides/source/active_storage_overview.md
++++ b/guides/source/active_storage_overview.md
+@@ -988,6 +988,51 @@ processor can be changed by setting [`config.active_storage.variant_processor`][
+ [`variant`]: https://api.rubyonrails.org/classes/ActiveStorage/Blob/Representable.html#method-i-variant
+ [Vips]: https://www.rubydoc.info/gems/ruby-vips/Vips/Image
+ 
++#### Disabled Vips Image Loaders and Savers
++
++libvips marks some of its image loaders and savers as
++[unfuzzed](https://www.libvips.org/2022/05/28/What's-new-in-8.13.html#blocking-of-unfuzzed-loaders),
++meaning they should not be used to process untrusted content. Active Storage disables all of them
++while your application boots, before any initializer runs.
++
++Doing so requires libvips 8.13 or later and ruby-vips 2.2.1 or later, which are Active Storage's
++minimum supported versions. When ruby-vips is installed and either minimum is not met, Active
++Storage raises a `RuntimeError` while booting rather than run in an unsecurable environment. Upgrade
++libvips and ruby-vips.
++
++Notably, ImageMagick is marked as an unfuzzed loader and is disabled by default. On many platforms,
++libvips relies on ImageMagick to read BMP, ICO, and PSD files, so attachments in those formats
++cannot be transformed by default on those platforms. Attaching, storing, and downloading them is
++unaffected, but generating a variant raises `Vips::Error`, and analysis does not record their
++`width` and `height`.
++
++Analysis also does not record dimensions for other types that libvips reads with an unfuzzed
++loader, such as SVG, JPEG XL, JPEG 2000, and Netpbm. Those types are not in the default
++`ActiveStorage.variable_content_types`, so they are not variable in the first place.
++
++The savers marked unfuzzed are typically FITS, JXL, and ImageMagick, so requesting one of those as
++a variant's output format, such as `variant(format: :jxl)`, also raises `Vips::Error`.
++
++An application that needs BMP, ICO, or PSD variants of trusted inputs can re-enable the ImageMagick
++loader in an initializer:
++
++```ruby
++# config/initializers/vips.rb
++Vips.block("VipsForeignLoadMagick", false) # Note this is dangerous for untrusted content!
++```
++
++Operation names and which of them are marked unfuzzed are both platform-dependent, so run `vips -l`
++to see the class hierarchy for your build.
++
++WARNING: Re-enabling unfuzzed image loaders and savers is dangerous. You should only attempt this
++after researching how your distribution builds libvips and which library delegates are enabled.
++
++WARNING: Even re-enabling only the ImageMagick loader, as illustrated above, is dangerous. libvips
++delegates many more file types to ImageMagick than just BMP, ICO, and PSD, so re-enabling it exposes
++a much larger attack surface. Do this only when all image uploads are trusted content, and only
++alongside a strict [ImageMagick security
++policy](https://imagemagick.org/script/security-policy.php).
++
+ ### Previewing Files
+ 
+ Some non-image files can be previewed: that is, they can be presented as images.

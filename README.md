@@ -18,7 +18,7 @@ PoC bổ sung bốn lớp dữ liệu:
 Raw response được lưu tại chỗ. Vì vậy việc một URL hết hạn hoặc không truy cập
 được sau này không làm mất bằng chứng đã crawl.
 
-## Deliverables cho yêu cầu mentor
+## Deliverables
 
 | Yêu cầu | Dataset đầy đủ giữ local | Sample được push lên GitHub |
 |---|---|---|

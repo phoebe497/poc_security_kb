@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import sys
@@ -63,7 +64,12 @@ def fetch_advisories(limit: int) -> list[dict[str, Any]]:
         raise RuntimeError(f"Không thể kết nối GitHub API: {exc.reason}") from exc
 
 
-def normalize(advisory: dict[str, Any], collected_at: str) -> dict[str, Any]:
+def normalize(
+    advisory: dict[str, Any],
+    collected_at: str,
+    raw_path: str | None = None,
+    raw_sha256: str | None = None,
+) -> dict[str, Any]:
     cwes = [
         {"id": item.get("cwe_id"), "name": item.get("name")}
         for item in advisory.get("cwes", [])
@@ -92,8 +98,12 @@ def normalize(advisory: dict[str, Any], collected_at: str) -> dict[str, Any]:
             }
         )
 
+    ghsa_id = advisory.get("ghsa_id") or "UNKNOWN"
+    knowledge_id = (
+        ghsa_id if ghsa_id.upper().startswith("GHSA-") else f"GHSA-{ghsa_id}"
+    )
     return {
-        "knowledge_id": f"GHSA-{advisory.get('ghsa_id', 'UNKNOWN')}",
+        "knowledge_id": knowledge_id,
         "knowledge_type": "security_advisory",
         "ghsa_id": advisory.get("ghsa_id"),
         "cve_id": advisory.get("cve_id"),
@@ -113,11 +123,14 @@ def normalize(advisory: dict[str, Any], collected_at: str) -> dict[str, Any]:
             "api_url": advisory.get("url"),
             "reviewed_at": advisory.get("github_reviewed_at"),
             "trust_level": "official_reviewed",
+            "raw_path": raw_path,
+            "raw_sha256": raw_sha256,
+            "raw_kind": "github_api_payload",
         },
         "collection": {
             "collected_at": collected_at,
             "collector": "poc_security_kb/crawl_ghsa.py",
-            "schema_version": "1.0",
+            "schema_version": "1.1",
         },
     }
 
@@ -214,8 +227,10 @@ def write_summary(records: list[dict[str, Any]], path: Path) -> None:
             "## Giới hạn của PoC",
             "",
             "- Đây là mẫu thu thập metadata, chưa phải Knowledge Base hoàn chỉnh.",
-            "- Dữ liệu chưa chứa source, sink, sanitizer, patch diff hoặc PoC đã chuẩn hóa.",
-            "- Cần bổ sung bước liên kết advisory với commit, test và rule trong giai đoạn tiếp theo.",
+            "- File này chỉ là lớp advisory metadata; patch diff, PoC và "
+            "source/sink/sanitizer nằm trong data/processed.",
+            "- Dùng crawl_github_evidence.py, crawl_codeql_models.py và "
+            "transform_to_kb.py để tạo KB đầy đủ.",
             "",
         ]
     )
@@ -240,9 +255,26 @@ def main() -> int:
 
     collected_at = datetime.now(timezone.utc).isoformat()
     raw = fetch_advisories(args.limit)
-    records = [normalize(item, collected_at) for item in raw]
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    raw_dir = args.output_dir.parent / "data" / "raw" / "github" / "advisories"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    records = []
+    for item in raw:
+        ghsa_id = item.get("ghsa_id") or "unknown"
+        raw_bytes = json.dumps(
+            item, ensure_ascii=False, indent=2
+        ).encode("utf-8")
+        raw_path = raw_dir / f"{ghsa_id}.json"
+        raw_path.write_bytes(raw_bytes)
+        records.append(
+            normalize(
+                item,
+                collected_at,
+                str(raw_path),
+                hashlib.sha256(raw_bytes).hexdigest(),
+            )
+        )
     json_path = args.output_dir / "ghsa_advisories.json"
     csv_path = args.output_dir / "ghsa_advisories.csv"
     summary_path = args.output_dir / "summary.md"

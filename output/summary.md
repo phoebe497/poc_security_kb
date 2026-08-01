@@ -1,47 +1,38 @@
 # Tóm tắt PoC thu thập dữ liệu Security KB
 
-- Số advisory đã thu thập: **30**
+- Số advisory đã thu thập: **5**
 - Nguồn: **GitHub Advisory Database (reviewed advisories)**
-- Thời điểm thu thập: **2026-07-30T09:38:27.601237+00:00**
+- Thời điểm thu thập: **2026-07-31T08:43:35.179251+00:00**
 
 ## Phân bố severity
 
 | Severity | Số lượng |
 |---|---:|
-| high | 12 |
-| medium | 10 |
-| low | 6 |
 | critical | 2 |
+| high | 2 |
+| low | 1 |
 
 ## CWE xuất hiện nhiều nhất
 
 | CWE | Số lượng |
 |---|---:|
-| CWE-74 | 3 |
-| CWE-639 | 3 |
-| CWE-94 | 3 |
-| CWE-611 | 3 |
-| CWE-22 | 2 |
-| CWE-863 | 2 |
-| CWE-200 | 2 |
-| CWE-862 | 2 |
-| CWE-918 | 2 |
-| CWE-1325 | 2 |
+| CWE-95 | 1 |
+| CWE-1188 | 1 |
+| CWE-416 | 1 |
+| CWE-76 | 1 |
+| CWE-918 | 1 |
 
 ## Hệ sinh thái package
 
 | Ecosystem | Số lượng |
 |---|---:|
-| maven | 23 |
-| go | 9 |
-| npm | 7 |
-| composer | 6 |
-| pip | 4 |
-| erlang | 2 |
-| rubygems | 1 |
+| rubygems | 4 |
+| npm | 2 |
+| pip | 1 |
 
 ## Giới hạn của PoC
 
-- Đây là mẫu thu thập metadata, chưa phải Knowledge Base hoàn chỉnh.
-- Dữ liệu chưa chứa source, sink, sanitizer, patch diff hoặc PoC đã chuẩn hóa.
-- Cần bổ sung bước liên kết advisory với commit, test và rule trong giai đoạn tiếp theo.
+- Đây là lớp advisory metadata; patch diff, PoC và source/sink/sanitizer
+  nằm trong `data/processed`.
+- Dùng `crawl_github_evidence.py`, `crawl_codeql_models.py` và
+  `transform_to_kb.py` để tạo KB đầy đủ.

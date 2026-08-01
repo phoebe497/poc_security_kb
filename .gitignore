@@ -33,3 +33,16 @@ ENV/
 Thumbs.db
 *.log
 .env
+
+# hidden files
+raw_data.md
+sample.json
+schema.md
+transform.md
+
+# Internal workflow artifacts
+_bmad-output/
+
+# Crawler cache and generated KB datasets
+data/raw/
+data/processed/

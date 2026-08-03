@@ -371,8 +371,8 @@ def codeql_entry(model: dict[str, Any], output_root: Path) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Transform evidence thành KB entries.")
-    base = Path(__file__).parent
-    parser.add_argument("--advisories", type=Path, default=base / "output" / "ghsa_advisories.json")
+    base = Path(__file__).resolve().parents[1]
+    parser.add_argument("--advisories", type=Path, default=base / "data" / "processed" / "ghsa" / "ghsa_advisories.json")
     parser.add_argument("--evidence", type=Path, default=base / "data" / "processed" / "github_evidence.jsonl")
     parser.add_argument("--models", type=Path, default=base / "data" / "processed" / "codeql_models.jsonl")
     parser.add_argument("--output-dir", type=Path, default=base / "data" / "processed" / "knowledge_base")

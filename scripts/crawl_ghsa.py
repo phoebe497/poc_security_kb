@@ -245,7 +245,7 @@ def main() -> int:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path(__file__).parent / "output",
+        default=Path(__file__).resolve().parents[1] / "data" / "processed" / "ghsa",
         help="Thư mục đầu ra.",
     )
     args = parser.parse_args()

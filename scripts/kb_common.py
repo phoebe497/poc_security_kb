@@ -208,3 +208,54 @@ class HttpClient:
             max_bytes=max_bytes,
         )
         return json.loads(data.decode("utf-8")), data, metadata
+
+    def post_json(
+        self,
+        url: str,
+        payload: dict[str, Any],
+        *,
+        max_bytes: int = DEFAULT_MAX_BYTES,
+    ) -> tuple[Any, bytes, dict[str, str]]:
+        """POST JSON với cùng giới hạn timeout/retry/size như các GET request."""
+        request_body = json.dumps(payload).encode("utf-8")
+        headers = dict(self.default_headers)
+        headers.update(
+            {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            }
+        )
+        last_error: Exception | None = None
+        for attempt in range(self.retries + 1):
+            request = urllib.request.Request(
+                url,
+                data=request_body,
+                headers=headers,
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                    data = response.read(max_bytes + 1)
+                    if len(data) > max_bytes:
+                        raise RuntimeError(
+                            f"Nội dung vượt giới hạn {max_bytes} bytes: {url}"
+                        )
+                    metadata = {
+                        "final_url": response.geturl(),
+                        "content_type": response.headers.get("Content-Type", ""),
+                        "etag": response.headers.get("ETag", ""),
+                        "last_modified": response.headers.get("Last-Modified", ""),
+                    }
+                    return json.loads(data.decode("utf-8")), data, metadata
+            except urllib.error.HTTPError as exc:
+                body = exc.read(4096).decode("utf-8", errors="replace")
+                last_error = RuntimeError(
+                    f"HTTP {exc.code} khi POST {url}: {body}"
+                )
+                if exc.code not in {429, 500, 502, 503, 504}:
+                    break
+            except (urllib.error.URLError, TimeoutError, RuntimeError) as exc:
+                last_error = exc
+            if attempt < self.retries:
+                time.sleep(1 + attempt)
+        raise RuntimeError(str(last_error or f"Không thể POST {url}"))

@@ -388,11 +388,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Crawl patch diff, PR/issue và PoC từ GHSA references."
     )
-    base = Path(__file__).parent
+    base = Path(__file__).resolve().parents[1]
     parser.add_argument(
         "--input",
         type=Path,
-        default=base / "output" / "ghsa_advisories.json",
+        default=base / "data" / "processed" / "ghsa" / "ghsa_advisories.json",
     )
     parser.add_argument("--limit", type=int, default=10)
     parser.add_argument(

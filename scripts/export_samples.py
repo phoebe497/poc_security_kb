@@ -94,7 +94,7 @@ def portable_source_path(path: Path, base: Path) -> str:
 
 
 def main() -> int:
-    base = Path(__file__).resolve().parent
+    base = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--evidence",
@@ -106,7 +106,11 @@ def main() -> int:
         type=Path,
         default=base / "data" / "processed" / "codeql_models.jsonl",
     )
-    parser.add_argument("--output-dir", type=Path, default=base / "samples")
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=base / "data" / "samples" / "sprint-02-evidence",
+    )
     args = parser.parse_args()
 
     evidence = select_by_group(

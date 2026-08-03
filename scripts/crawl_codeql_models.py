@@ -365,7 +365,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Crawl source/sink/barrier models từ github/codeql."
     )
-    base = Path(__file__).parent
+    base = Path(__file__).resolve().parents[1]
     parser.add_argument(
         "--languages",
         default="python,javascript",

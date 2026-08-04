@@ -8,10 +8,11 @@ code, dữ liệu mẫu và report của từng giai đoạn độc lập.
 
 1. [Bản đồ tài liệu](docs/README.md).
 2. [Sprint 3: KB theo phiên bản thư viện](docs/sprints/sprint-03-version-aware-kb/README.md).
-3. [Schema version-aware](docs/sprints/sprint-03-version-aware-kb/schema.md).
-4. [Cách dùng Django và Log4j](docs/sprints/sprint-03-version-aware-kb/usage-guide.md).
-5. `data/samples/sprint-03-version-aware-kb/` để kiểm tra dữ liệu thật.
-6. `scripts/crawl_library_versions.py` để kiểm tra cách tái lập kết quả.
+3. [Mentor summary: phương pháp và kết quả kiểm chứng](docs/sprints/sprint-03-version-aware-kb/mentor-summary.md).
+4. [Schema version-aware](docs/sprints/sprint-03-version-aware-kb/version-kb-schema.md).
+5. [Cách dùng Django và Log4j](docs/sprints/sprint-03-version-aware-kb/usage-guide.md).
+6. `data/samples/sprint-03-version-aware-kb/` để kiểm tra dữ liệu thật.
+7. `scripts/crawl_library_versions.py` để kiểm tra cách tái lập kết quả.
 
 ## Các sprint
 

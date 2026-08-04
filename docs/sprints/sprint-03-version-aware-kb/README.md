@@ -23,7 +23,8 @@ Markdown chỉ dùng cho research/report; JSONL dùng cho ingestion, filter và 
 | Deliverable | Vị trí | Cách kiểm tra |
 |---|---|---|
 | Crawler | `scripts/crawl_library_versions.py` | Chạy command trong README root |
-| Schema | [schema.md](schema.md) | Kiểm tra trạng thái và provenance |
+| Schema | [version-kb-schema.md](version-kb-schema.md) | Kiểm tra trạng thái, semantics và provenance |
+| Mentor summary | [mentor-summary.md](mentor-summary.md) | Đọc nhanh phương pháp, số liệu và kiểm chứng |
 | Research/brainstorm | [research-plan.md](research-plan.md) | Kiểm tra nguồn và roadmap |
 | Hướng dẫn sử dụng | [usage-guide.md](usage-guide.md) | Crawl/query Django và Log4j |
 | Report lần crawl | [crawl-report.md](crawl-report.md) | Kiểm tra số liệu/lỗi |

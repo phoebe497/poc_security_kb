@@ -7,12 +7,13 @@ code, dữ liệu mẫu và report của từng giai đoạn độc lập.
 ## Mentor nên xem gì trước?
 
 1. [Bản đồ tài liệu](docs/README.md).
-2. [Sprint 3: KB theo phiên bản thư viện](docs/sprints/sprint-03-version-aware-kb/README.md).
-3. [Mentor summary: phương pháp và kết quả kiểm chứng](docs/sprints/sprint-03-version-aware-kb/mentor-summary.md).
-4. [Schema version-aware](docs/sprints/sprint-03-version-aware-kb/version-kb-schema.md).
-5. [Cách dùng Django và Log4j](docs/sprints/sprint-03-version-aware-kb/usage-guide.md).
-6. `data/samples/sprint-03-version-aware-kb/` để kiểm tra dữ liệu thật.
-7. `scripts/crawl_library_versions.py` để kiểm tra cách tái lập kết quả.
+2. [Sprint 4: nghiên cứu enrich CVE thành technical knowledge](docs/sprints/sprint-04-cve-enrichment/README.md).
+3. [Sprint 3: KB theo phiên bản thư viện](docs/sprints/sprint-03-version-aware-kb/README.md).
+4. [Mentor summary: phương pháp và kết quả kiểm chứng](docs/sprints/sprint-03-version-aware-kb/mentor-summary.md).
+5. [Schema version-aware](docs/sprints/sprint-03-version-aware-kb/version-kb-schema.md).
+6. [Cách dùng Django và Log4j](docs/sprints/sprint-03-version-aware-kb/usage-guide.md).
+7. `data/samples/sprint-03-version-aware-kb/` để kiểm tra dữ liệu thật.
+8. `scripts/crawl_library_versions.py` để kiểm tra cách tái lập kết quả.
 
 ## Các sprint
 
@@ -21,6 +22,7 @@ code, dữ liệu mẫu và report của từng giai đoạn độc lập.
 | 01 — Foundation | KB/RAG cần tri thức gì để giảm False Positive? | GHSA sample và báo cáo nền tảng | Hoàn thành |
 | 02 — Evidence enrichment | Lấy patch diff, PoC, source/sink/sanitizer thế nào? | GitHub evidence, CodeQL model, patch sample | Hoàn thành |
 | 03 — Version-aware KB | Một phiên bản Django/Log4j cụ thể có tri thức bảo mật gì? | Release inventory, exact-version security matrix, OSV snapshot | PoC đã triển khai |
+| 04 — CVE enrichment research | Bổ sung source/sink, precondition, PoC và technical evidence bằng cách nào? | Report so sánh phương pháp và PoC recommendation | Nghiên cứu hoàn thành |
 
 ## Cấu trúc repo
 
@@ -33,7 +35,8 @@ code, dữ liệu mẫu và report của từng giai đoạn độc lập.
 │   └── sprints/
 │       ├── sprint-01-foundation/
 │       ├── sprint-02-evidence-enrichment/
-│       └── sprint-03-version-aware-kb/
+│       ├── sprint-03-version-aware-kb/
+│       └── sprint-04-cve-enrichment/
 ├── scripts/
 │   ├── crawl_ghsa.py
 │   ├── crawl_github_evidence.py

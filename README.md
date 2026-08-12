@@ -1,120 +1,80 @@
 # Security Knowledge Base cho multi-agent SAST
 
-PoC xây dựng Knowledge Base có provenance để V-LLM kiểm tra finding SAST bằng
-bằng chứng lưu offline. Repo được chia theo sprint để mentor có thể đọc mục tiêu,
-code, dữ liệu mẫu và report của từng giai đoạn độc lập.
+Proof-of-concept xây dựng một **Knowledge Base (KB) có provenance** giúp V-LLM xác minh
+lại các finding của công cụ SAST bằng bằng chứng lưu offline, qua đó **giảm false
+positive**. Toàn bộ dữ liệu đều truy ngược được về nguồn gốc (advisory, patch, lab,
+release…) nên kết quả có thể tái lập và kiểm chứng.
 
-## Mentor nên xem gì trước?
+Dự án phát triển theo từng sprint. Mỗi sprint trả lời một câu hỏi nghiên cứu độc lập và
+đi kèm code, dữ liệu mẫu và một báo cáo `report_sprintXX.md`.
 
-1. [Bản đồ tài liệu](docs/README.md).
-2. [Sprint 4: nghiên cứu enrich CVE thành technical knowledge](docs/sprints/sprint-04-cve-enrichment/README.md).
-3. [Sprint 3: KB theo phiên bản thư viện](docs/sprints/sprint-03-version-aware-kb/README.md).
-4. [Mentor summary: phương pháp và kết quả kiểm chứng](docs/sprints/sprint-03-version-aware-kb/mentor-summary.md).
-5. [Schema version-aware](docs/sprints/sprint-03-version-aware-kb/version-kb-schema.md).
-6. [Cách dùng Django và Log4j](docs/sprints/sprint-03-version-aware-kb/usage-guide.md).
-7. `data/samples/sprint-03-version-aware-kb/` để kiểm tra dữ liệu thật.
-8. `scripts/crawl_library_versions.py` để kiểm tra cách tái lập kết quả.
+## Tổng quan các sprint
 
-## Các sprint
-
-| Sprint | Câu hỏi cần trả lời | Deliverable chính | Trạng thái |
+| Sprint | Mục tiêu | Deliverable chính | Trạng thái |
 |---|---|---|---|
-| 01 — Foundation | KB/RAG cần tri thức gì để giảm False Positive? | GHSA sample và báo cáo nền tảng | Hoàn thành |
+| 01 — Foundation | KB/RAG cần tri thức gì để giảm false positive? | GHSA sample + báo cáo nền tảng | Hoàn thành |
 | 02 — Evidence enrichment | Lấy patch diff, PoC, source/sink/sanitizer thế nào? | GitHub evidence, CodeQL model, patch sample | Hoàn thành |
-| 03 — Version-aware KB | Một phiên bản Django/Log4j cụ thể có tri thức bảo mật gì? | Release inventory, exact-version security matrix, OSV snapshot | PoC đã triển khai |
-| 04 — CVE enrichment research | Bổ sung source/sink, precondition, PoC và technical evidence bằng cách nào? | Report so sánh phương pháp và PoC recommendation | Nghiên cứu hoàn thành |
+| 03 — Version-aware KB | Một phiên bản Django/Log4j cụ thể có tri thức bảo mật gì? | Release inventory, exact-version security matrix, OSV snapshot | Hoàn thành |
+| 04 — CVE enrichment | Bổ sung source/sink, precondition, PoC bằng cách nào? | Report so sánh phương pháp + đề xuất PoC | Hoàn thành |
+| 05 — Business Logic KB | KB business logic có giúp LLM tìm bug tốt hơn không? | Playbook PortSwigger + rule nội bộ, bộ câu hỏi, benchmark có/không KB | Hoàn thành |
 
 ## Cấu trúc repo
 
 ```text
 .
-├── README.md
-├── docs/
-│   ├── README.md
-│   ├── reference/
-│   └── sprints/
-│       ├── sprint-01-foundation/
-│       ├── sprint-02-evidence-enrichment/
-│       ├── sprint-03-version-aware-kb/
-│       └── sprint-04-cve-enrichment/
-├── scripts/
-│   ├── crawl_ghsa.py
-│   ├── crawl_github_evidence.py
-│   ├── crawl_codeql_models.py
-│   ├── crawl_library_versions.py
-│   ├── transform_to_kb.py
-│   └── export_samples.py
+├── docs/                       # Tài liệu
+│   ├── README.md               # Bản đồ tài liệu
+│   ├── reference/              # Nguồn dữ liệu, layout repo
+│   └── sprints/                # Báo cáo từng sprint (report_sprintXX.md)
+├── schemas/                    # JSON schema cho các loại record trong KB
+├── scripts/                    # Crawler, transform, benchmark
 ├── data/
-│   ├── samples/       # Dataset nhỏ được commit để mentor chấm
-│   ├── raw/           # Snapshot đầy đủ, chỉ giữ local
-│   └── processed/     # Dataset sinh tự động, chỉ giữ local
-└── tests/
+│   ├── samples/                # Dataset nhỏ, được commit để review/tái lập
+│   ├── raw/                    # Snapshot upstream đầy đủ (giữ local / Git LFS)
+│   └── processed/              # Dataset sinh tự động (giữ local)
+└── tests/                      # Unit test
 ```
 
-Chi tiết vai trò từng thư mục nằm tại
-[repository-layout.md](docs/reference/repository-layout.md).
+Chi tiết vai trò từng thư mục: [docs/reference/repository-layout.md](docs/reference/repository-layout.md).
 
-## Cài đặt và test
+## Bắt đầu nhanh
 
-```powershell
+```bash
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 ```
 
-Crawler chỉ tải text/JSON/patch để phân tích, không chạy PoC hoặc code tải về.
+Các crawler chỉ tải text/JSON/patch để phân tích, **không** chạy PoC hay code tải về.
 
-## Chạy Sprint 3 — Django và Log4j
+## Chạy các pipeline
 
-```powershell
-python scripts/crawl_library_versions.py `
-  --libraries django,log4j `
-  --max-versions 0 `
+### Sprint 03 — KB theo phiên bản (Django, Log4j)
+
+```bash
+python scripts/crawl_library_versions.py \
+  --libraries django,log4j \
+  --max-versions 0 \
   --max-advisories 40
 ```
 
-Pipeline thực hiện:
-
-1. Lấy inventory release Django từ PyPI và Log4j Core từ Maven Central.
-2. Gửi các cặp `ecosystem + package + version` qua OSV `querybatch`.
-3. Tạo trạng thái `known_affected`, `no_known_vulnerability` hoặc `query_error`.
-4. Tải snapshot advisory đầy đủ cho các lỗ hổng ưu tiên.
-5. Lưu raw response cùng SHA-256 ở local và xuất sample không chứa absolute path.
+Pipeline sẽ: lấy inventory release từ PyPI/Maven Central → query OSV `querybatch` cho
+từng `ecosystem + package + version` → gán trạng thái (`known_affected`,
+`no_known_vulnerability`, `query_error`) → tải snapshot advisory cho lỗ hổng ưu tiên →
+lưu raw kèm SHA-256 và xuất sample không chứa absolute path.
 
 Tra cứu nhanh một version sau khi crawl:
 
-```powershell
+```bash
 python scripts/query_version_kb.py --library django --version 5.2.1
 python scripts/query_version_kb.py --library log4j --version 2.14.1
 ```
 
-Output local đầy đủ:
+> `no_known_vulnerability` chỉ nghĩa là OSV không trả advisory đã biết tại thời điểm
+> crawl — **không** được diễn giải thành `safe`.
 
-```text
-data/processed/version_kb/
-├── library_releases.jsonl
-├── version_security_matrix.jsonl
-├── advisories.jsonl
-├── patch_diffs.jsonl
-└── manifest.json
-```
+### Sprint 01 & 02 — Advisory và evidence
 
-Output nhỏ có thể push/chấm:
-
-```text
-data/samples/sprint-03-version-aware-kb/
-├── library_releases.jsonl
-├── version_security_matrix.jsonl
-├── advisories.jsonl
-├── patch_diffs.jsonl
-└── manifest.json
-```
-
-`no_known_vulnerability` chỉ có nghĩa là OSV không trả advisory đã biết tại thời
-điểm crawl; tuyệt đối không được đổi nhãn này thành `safe`.
-
-## Chạy lại Sprint 1 và Sprint 2
-
-```powershell
+```bash
 python scripts/crawl_ghsa.py --limit 5
 python scripts/crawl_github_evidence.py --limit 5 --max-github-artifacts 10
 python scripts/crawl_codeql_models.py --languages python,java --max-files-per-language 25
@@ -122,19 +82,39 @@ python scripts/transform_to_kb.py
 python scripts/export_samples.py
 ```
 
-Có thể đặt `GITHUB_TOKEN` trong environment để tăng rate limit. Không ghi token
-vào source, `.env` hoặc dataset.
+Có thể đặt `GITHUB_TOKEN` trong environment để tăng rate limit. Không ghi token vào
+source, `.env` hay dataset.
+
+### Sprint 05 — Business Logic KB và benchmark
+
+```bash
+# 1. Crawl PortSwigger và dựng playbook
+python scripts/crawl_portswigger_logic.py
+python scripts/transform_business_logic_kb.py --export-real
+
+# 2. Benchmark LLM có KB vs không KB (LLM-as-Judge)
+cp .env.example .env          # đặt OPENCODE_API_KEY trong .env
+python scripts/run_business_logic_benchmark.py
+```
+
+Benchmark dùng OpenCode Zen (OpenAI-compatible); mặc định responder `glm-5.1`, judge
+`gpt-5.6-luna`. Kết quả lưu tại `data/samples/sprint-05-business-logic-kb/`
+(`benchmark_runs.jsonl`, `benchmark_summary.json`). Xem
+[report_sprint05.md](docs/sprints/sprint-05-business-logic-kb/report_sprint05.md).
 
 ## Chính sách dữ liệu
 
-| Loại | Có commit? | Lý do |
+| Loại | Commit? | Lý do |
 |---|---|---|
 | Code, test, docs, schema | Có | Tái lập và review được |
-| `data/samples/` | Có | Nhỏ, đã loại đường dẫn local, đủ để mentor chấm |
-| `data/raw/` | Không | Có thể rất lớn và chứa snapshot upstream |
-| `data/processed/` | Không | Sinh lại được, thay đổi nhiều giữa các lần crawl |
-| Tài liệu mentor nội bộ | Không | Chỉ dùng đối chiếu local |
-| Token, virtualenv, cache | Không | Tránh lộ secret và file phụ thuộc máy |
+| `data/samples/` | Có | Nhỏ, đã loại đường dẫn local |
+| `data/raw/` (HTML crawl) | Git LFS | Snapshot lớn, dùng LFS để không phình repo |
+| `data/processed/` | Không | Sinh lại được, thay đổi giữa các lần crawl |
+| Token, `.env`, virtualenv, cache | Không | Tránh lộ secret và file phụ thuộc máy |
 
-Danh sách nguồn và mức độ tin cậy được mô tả tại
-[data-sources.md](docs/reference/data-sources.md).
+Danh sách nguồn dữ liệu và mức độ tin cậy: [docs/reference/data-sources.md](docs/reference/data-sources.md).
+
+## Tài liệu
+
+- [Bản đồ tài liệu](docs/README.md)
+- Báo cáo từng sprint: `docs/sprints/sprint-0X-*/report_sprint0X.md`

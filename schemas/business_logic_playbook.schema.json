@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vinsoc.internal/schemas/business_logic_playbook/v1",
+  "title": "Business Logic Playbook",
+  "description": "Một record mô tả một lớp Business Logic Vulnerability: business rule, giả định sai, abuse flow, missing control và remediation. Dùng trong RAG để giúp LLM phát hiện bug logic trong source code.",
+  "type": "object",
+  "required": [
+    "playbook_id",
+    "title",
+    "category",
+    "business_context",
+    "actors",
+    "components",
+    "intended_rules",
+    "flawed_assumptions",
+    "preconditions",
+    "abuse_sequence",
+    "missing_controls",
+    "detection_questions",
+    "false_positive_conditions",
+    "impact",
+    "remediation",
+    "evidence_ids"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "playbook_id": {
+      "type": "string",
+      "description": "ID ổn định, uppercase, dạng BL-CATEGORY-DESCRIPTOR, ví dụ BL-WORKFLOW-STEP-BYPASS.",
+      "pattern": "^BL-[A-Z0-9_-]+$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Tên ngắn mô tả lớp lỗi.",
+      "minLength": 5
+    },
+    "category": {
+      "type": "string",
+      "description": "Nhóm lỗi business logic.",
+      "enum": [
+        "trust_client_input",
+        "unconventional_input",
+        "workflow_sequence_violation",
+        "domain_invariant_violation",
+        "replay_idempotency",
+        "policy_authorization_inconsistency"
+      ]
+    },
+    "business_context": {
+      "type": "string",
+      "description": "Mô tả ngắn ngữ cảnh business mà lỗi xảy ra."
+    },
+    "actors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Các tác nhân liên quan: user, admin, system, attacker, v.v."
+    },
+    "components": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Các component code liên quan: controller, service, repository, policy, state_store, v.v."
+    },
+    "intended_rules": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Business rule đúng mà hệ thống cần enforce."
+    },
+    "flawed_assumptions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Giả định sai của developer dẫn đến lỗi."
+    },
+    "preconditions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Điều kiện phải có để khai thác lỗi."
+    },
+    "state_transitions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Chuỗi chuyển trạng thái hợp lệ hoặc bị bỏ qua, ví dụ CREATED -> VERIFIED -> COMPLETED."
+    },
+    "abuse_sequence": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Các bước attacker thực hiện để khai thác lỗi."
+    },
+    "missing_controls": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Các kiểm soát bảo mật còn thiếu ở server/service."
+    },
+    "detection_questions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Câu hỏi dùng khi review code để phát hiện lỗi."
+    },
+    "false_positive_conditions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Điều kiện làm finding không phải lỗi thật (True Negative)."
+    },
+    "impact": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Hậu quả bảo mật nếu khai thác thành công."
+    },
+    "remediation": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "Cách sửa đúng tầng server/business service."
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^(PS-SOURCE-[0-9]+|INT-RULE-[0-9]+)" },
+      "minItems": 1,
+      "description": "ID nguồn: PS-SOURCE-* (PortSwigger đã snapshot) hoặc INT-RULE-* (business rule nội bộ, không public)."
+    }
+  }
+}

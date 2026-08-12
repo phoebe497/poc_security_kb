@@ -1,0 +1,70 @@
+{
+  "schema_version": "1",
+  "sprint": "sprint-05-business-logic-kb",
+  "generated_at": "2026-08-12T03:55:48+00:00",
+  "source": {
+    "name": "PortSwigger Web Security Academy — Business Logic & Race Conditions (+ 3 rule nội bộ)",
+    "seed_urls": [
+      "https://portswigger.net/web-security/logic-flaws",
+      "https://portswigger.net/web-security/logic-flaws/examples",
+      "https://portswigger.net/web-security/race-conditions"
+    ],
+    "pages_crawled": 21,
+    "internal_rules": ["INT-RULE-001", "INT-RULE-002", "INT-RULE-003"],
+    "crawl_note": "Raw HTML lưu qua Git LFS tại data/raw/portswigger/. Playbooks là paraphrase có cấu trúc, không sao chép nguyên văn. 3 rule nội bộ là synthetic để minh hoạ tri thức mà LLM public không có."
+  },
+  "llm": {
+    "api": "OpenCode Zen (OpenAI-compatible)",
+    "base_url": "https://opencode.ai/zen/go/v1",
+    "responder_model": "glm-5.1",
+    "judge_model": "gpt-5.6-luna",
+    "temperature": 0.0,
+    "max_tokens": 4000
+  },
+  "files": {
+    "playbooks.jsonl": {
+      "records": 24,
+      "source_breakdown": {"portswigger": 21, "internal": 3},
+      "categories": [
+        "trust_client_input",
+        "unconventional_input",
+        "workflow_sequence_violation",
+        "domain_invariant_violation",
+        "replay_idempotency",
+        "policy_authorization_inconsistency"
+      ],
+      "schema": "schemas/business_logic_playbook.schema.json"
+    },
+    "questions.jsonl": {
+      "records": 8,
+      "description": "5 câu theo pattern PortSwigger public (Q01–Q05) + 3 câu dựa rule nội bộ (Q06–Q08), code multi-component, không có comment làm lộ đáp án"
+    },
+    "answer_key.jsonl": {
+      "records": 8,
+      "description": "Gold answer với bug_keyword, business_rule_keyword, abuse_flow_keywords, remediation_keyword và hallucination_traps"
+    },
+    "benchmark_runs.jsonl": {
+      "records": 16,
+      "status": "completed",
+      "conditions": ["baseline", "kb_assisted"],
+      "runs_per_condition": 1,
+      "responder_model": "glm-5.1",
+      "judge_model": "gpt-5.6-luna",
+      "temperature": 0.0
+    },
+    "benchmark_summary.json": {
+      "status": "completed",
+      "baseline_avg": 9.25,
+      "kb_assisted_avg": 10.0,
+      "delta": 0.75,
+      "note": "Δ dồn vào nhóm câu hỏi rule nội bộ (Q06–Q08: +2 mỗi câu); nhóm public (Q01–Q05) Δ=0 vì model đã học sẵn. FP 0/0. Chi tiết trong report_sprint05.md §5."
+    }
+  },
+  "provenance_chain": "source_id → playbook_id → question_id → run_id → score",
+  "data_policy": {
+    "raw_html_committed": true,
+    "raw_html_storage": "git-lfs",
+    "sample_contains_local_paths": false,
+    "portswigger_verbatim_copy": false
+  }
+}

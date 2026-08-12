@@ -43,6 +43,12 @@ transform.md
 # Internal workflow artifacts
 _bmad-output/
 
-# Crawler cache and generated KB datasets
-data/raw/
-data/processed/
+# Crawler cache và generated KB — raw HTML và large JSONL dùng Git LFS
+# (xem .gitattributes). Chỉ bỏ qua các thư mục không cần LFS:
+data/raw/osv/
+data/raw/github/
+data/raw/codeql/
+data/processed/ghsa/
+data/processed/github_evidence/
+data/processed/codeql_models/
+data/processed/version_kb/

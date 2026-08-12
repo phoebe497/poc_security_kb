@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-08-12T03:55:48.299811+00:00",
+  "model": "glm-5.1",
+  "judge_model": "gpt-5.6-luna",
+  "temperature": 0.0,
+  "runs_per_condition": 1,
+  "max_score_per_question": 10,
+  "rubric": {
+    "correct_bug_identified": "Xác định đúng loại lỗi business logic (không phải lỗi kỹ thuật như SQLi/XSS).",
+    "business_rule_stated": "Nêu đúng business rule hoặc invariant bị vi phạm.",
+    "abuse_flow_described": "Mô tả abuse flow đi qua ít nhất 2 component (controller, service, repo, v.v.).",
+    "precondition_stated": "Nêu điều kiện cần để khai thác lỗi.",
+    "impact_stated": "Nêu hậu quả nghiệp vụ cụ thể (không chỉ 'có lỗi').",
+    "remediation_server_side": "Đề xuất cách sửa đúng tầng server/service, không chỉ client-side.",
+    "no_hallucination": "Không hallucinate lỗi kỹ thuật không liên quan (SQLi, XSS, auth bypass không có trong code)."
+  },
+  "questions": {
+    "Q01": {
+      "title": "Giá do client kiểm soát trong checkout",
+      "baseline_avg": 10.0,
+      "kb_assisted_avg": 10.0,
+      "delta": 0.0
+    },
+    "Q02": {
+      "title": "Coupon vẫn áp sau khi cart thay đổi",
+      "baseline_avg": 10.0,
+      "kb_assisted_avg": 10.0,
+      "delta": 0.0
+    },
+    "Q03": {
+      "title": "Bỏ qua bước xác minh trong registration workflow",
+      "baseline_avg": 10.0,
+      "kb_assisted_avg": 10.0,
+      "delta": 0.0
+    },
+    "Q04": {
+      "title": "Refund bị duplicate do thiếu idempotency",
+      "baseline_avg": 10.0,
+      "kb_assisted_avg": 10.0,
+      "delta": 0.0
+    },
+    "Q05": {
+      "title": "Thiếu policy và separation of duties khi approve giao dịch",
+      "baseline_avg": 10.0,
+      "kb_assisted_avg": 10.0,
+      "delta": 0.0
+    },
+    "Q06": {
+      "title": "Duyệt refund lớn thiếu kiểm soát chéo cost-center",
+      "baseline_avg": 8.0,
+      "kb_assisted_avg": 10.0,
+      "delta": 2.0
+    },
+    "Q07": {
+      "title": "Áp loyalty points và promo cùng lúc khi checkout",
+      "baseline_avg": 8.0,
+      "kb_assisted_avg": 10.0,
+      "delta": 2.0
+    },
+    "Q08": {
+      "title": "Release wire tới payee mới thêm",
+      "baseline_avg": 8.0,
+      "kb_assisted_avg": 10.0,
+      "delta": 2.0
+    }
+  },
+  "aggregate": {
+    "baseline_avg": 9.25,
+    "kb_assisted_avg": 10.0,
+    "delta": 0.75,
+    "baseline_fp_count": 0,
+    "kb_assisted_fp_count": 0,
+    "note": "LLM-as-Judge — phải được người thực hiện xem xét lại trước khi publish"
+  }
+}

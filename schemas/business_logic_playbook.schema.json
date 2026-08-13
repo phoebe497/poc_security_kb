@@ -43,7 +43,12 @@
         "workflow_sequence_violation",
         "domain_invariant_violation",
         "replay_idempotency",
-        "policy_authorization_inconsistency"
+        "policy_authorization_inconsistency",
+        "broken_object_authorization",
+        "excessive_data_exposure",
+        "mass_assignment",
+        "missing_authentication",
+        "fail_open"
       ]
     },
     "business_context": {
@@ -122,9 +127,9 @@
     },
     "evidence_ids": {
       "type": "array",
-      "items": { "type": "string", "pattern": "^(PS-SOURCE-[0-9]+|INT-RULE-[0-9]+)" },
+      "items": { "type": "string", "pattern": "^(PS-SOURCE-[0-9]+|INT-RULE-[0-9]+|CWE-[0-9]+|WSTG-[A-Z]+-[0-9]+)" },
       "minItems": 1,
-      "description": "ID nguồn: PS-SOURCE-* (PortSwigger đã snapshot) hoặc INT-RULE-* (business rule nội bộ, không public)."
+      "description": "ID nguồn: PS-SOURCE-* (PortSwigger đã snapshot), INT-RULE-* (business rule nội bộ), CWE-* (MITRE CWE), hoặc WSTG-* (OWASP Web Security Testing Guide)."
     }
   }
 }

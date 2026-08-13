@@ -57,6 +57,11 @@ VALID_CATEGORIES = {
     "domain_invariant_violation",
     "replay_idempotency",
     "policy_authorization_inconsistency",
+    "broken_object_authorization",
+    "excessive_data_exposure",
+    "mass_assignment",
+    "missing_authentication",
+    "fail_open",
 }
 
 RUBRIC_KEYS = {
@@ -122,7 +127,7 @@ class PlaybookSchemaTests(unittest.TestCase):
 
     def test_evidence_ids_format(self) -> None:
         import re
-        pattern = re.compile(r"^(PS-SOURCE-[0-9]+|INT-RULE-[0-9]+)")
+        pattern = re.compile(r"^(PS-SOURCE-[0-9]+|INT-RULE-[0-9]+|CWE-[0-9]+|WSTG-[A-Z]+-[0-9]+)")
         for pb in self.playbooks:
             for eid in pb["evidence_ids"]:
                 self.assertRegex(

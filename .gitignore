@@ -52,3 +52,4 @@ data/processed/ghsa/
 data/processed/github_evidence/
 data/processed/codeql_models/
 data/processed/version_kb/
+external/

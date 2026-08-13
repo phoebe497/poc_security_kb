@@ -1,0 +1,75 @@
+{
+  "status": "completed",
+  "generated_at": "2026-08-13T04:09:41.442033+00:00",
+  "source": "dmk1en/business_flaws — items-hackerone",
+  "model": "glm-5.1",
+  "judge_model": "gpt-5.6-luna",
+  "base_url": "https://opencode.ai/zen/go/v1",
+  "temperature": 0.0,
+  "n_items": 23,
+  "max_score_per_item": 10,
+  "rubric": {
+    "detected_required": 4,
+    "cwe_ok": 1,
+    "patch_quality": 3,
+    "precision_no_fp": 2
+  },
+  "aggregate": {
+    "baseline_avg": 7.26,
+    "kb_assisted_avg": 7.3,
+    "delta": 0.04,
+    "baseline_fp_count": 2,
+    "kb_assisted_fp_count": 4
+  },
+  "by_family": {
+    "rate-invariant": {
+      "n": 4,
+      "baseline_avg": 8.75,
+      "kb_assisted_avg": 8.75,
+      "delta": 0.0
+    },
+    "over-disclosure": {
+      "n": 3,
+      "baseline_avg": 5.33,
+      "kb_assisted_avg": 8.33,
+      "delta": 3.0
+    },
+    "missing-authn": {
+      "n": 1,
+      "baseline_avg": 7.0,
+      "kb_assisted_avg": 10.0,
+      "delta": 3.0
+    },
+    "workflow-state": {
+      "n": 4,
+      "baseline_avg": 8.0,
+      "kb_assisted_avg": 7.5,
+      "delta": -0.5
+    },
+    "input-invariant": {
+      "n": 4,
+      "baseline_avg": 5.5,
+      "kb_assisted_avg": 4.25,
+      "delta": -1.25
+    },
+    "mass-assignment": {
+      "n": 3,
+      "baseline_avg": 6.0,
+      "kb_assisted_avg": 4.67,
+      "delta": -1.33
+    },
+    "fail-open": {
+      "n": 2,
+      "baseline_avg": 9.0,
+      "kb_assisted_avg": 9.0,
+      "delta": 0.0
+    },
+    "object-authz": {
+      "n": 2,
+      "baseline_avg": 9.5,
+      "kb_assisted_avg": 9.5,
+      "delta": 0.0
+    }
+  },
+  "coverage_note": "kb_used = playbook_id model tự trích khi có KB; covered=false ⇒ gap."
+}

@@ -1,0 +1,294 @@
+[
+  {
+    "item_id": "VF-BL-050",
+    "family": "rate-invariant",
+    "lang": "go",
+    "baseline": 10,
+    "kb_assisted": 10,
+    "delta": 0,
+    "kb_used": [
+      "BL-REPLAY-IDEMPOTEN-RACE-CONDITIONS",
+      "BL-REPLAY-IDEMPOTEN-LIMIT-OVERRUN"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-051",
+    "family": "rate-invariant",
+    "lang": "typescript",
+    "baseline": 9,
+    "kb_assisted": 9,
+    "delta": 0,
+    "kb_used": [
+      "BL-AUTHZ-OBJECT-REFERENCE-IDOR",
+      "BL-REPLAY-IDEMPOTEN-RACE-CONDITIONS",
+      "BL-REPLAY-IDEMPOTEN-LIMIT-OVERRUN"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-052",
+    "family": "rate-invariant",
+    "lang": "java",
+    "baseline": 7,
+    "kb_assisted": 7,
+    "delta": 0,
+    "kb_used": [
+      "BL-REPLAY-IDEMPOTEN-LIMIT-OVERRUN",
+      "BL-REPLAY-IDEMPOTEN-RACE-CONDITIONS"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-053",
+    "family": "rate-invariant",
+    "lang": "go",
+    "baseline": 9,
+    "kb_assisted": 9,
+    "delta": 0,
+    "kb_used": [
+      "BL-DOMAIN-INVARIANT-LOGIC-FLAWS",
+      "BL-DOMAIN-INVARIANT-EXAMPLES"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-054",
+    "family": "over-disclosure",
+    "lang": "typescript",
+    "baseline": 9,
+    "kb_assisted": 9,
+    "delta": 0,
+    "kb_used": [
+      "BL-DISCLOSURE-CALLER-CONTROLLED-SCOPE"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-055",
+    "family": "over-disclosure",
+    "lang": "go",
+    "baseline": 7,
+    "kb_assisted": 7,
+    "delta": 0,
+    "kb_used": [
+      "BL-DOMAIN-INVARIANT-LOGIC-FLAWS",
+      "BL-DOMAIN-INVARIANT-FLAWED-ENFORCEMENT-OF-BUSINESS-RULE"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-056",
+    "family": "over-disclosure",
+    "lang": "java",
+    "baseline": 0,
+    "kb_assisted": 9,
+    "delta": 9,
+    "kb_used": [
+      "BL-DISCLOSURE-CALLER-CONTROLLED-SCOPE"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-057",
+    "family": "missing-authn",
+    "lang": "go",
+    "baseline": 7,
+    "kb_assisted": 10,
+    "delta": 3,
+    "kb_used": [
+      "BL-AUTHN-MISSING-ON-DATA-ROUTE"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-058",
+    "family": "workflow-state",
+    "lang": "go",
+    "baseline": 8,
+    "kb_assisted": 7,
+    "delta": -1,
+    "kb_used": [
+      "BL-DOMAIN-INVARIANT-LOGIC-FLAWS",
+      "BL-DOMAIN-INVARIANT-EXAMPLES"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-059",
+    "family": "workflow-state",
+    "lang": "typescript",
+    "baseline": 9,
+    "kb_assisted": 9,
+    "delta": 0,
+    "kb_used": [
+      "BL-DOMAIN-INVARIANT-LOGIC-FLAWS",
+      "BL-DOMAIN-INVARIANT-FLAWED-ENFORCEMENT-OF-BUSINESS-RULES",
+      "BL-TRUST-CLIENT-INP-EXCESSIVE-TRUST-IN-CLIENT-SIDE-CONT"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-060",
+    "family": "workflow-state",
+    "lang": "java",
+    "baseline": 6,
+    "kb_assisted": 6,
+    "delta": 0,
+    "kb_used": [
+      "BL-DOMAIN-INVARIANT-LOGIC-FLAWS"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-061",
+    "family": "workflow-state",
+    "lang": "go",
+    "baseline": 9,
+    "kb_assisted": 8,
+    "delta": -1,
+    "kb_used": [
+      "BL-TRUST-CLIENT-INP-HIGH-LEVEL",
+      "BL-DOMAIN-INVARIANT-LOGIC-FLAWS"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-062",
+    "family": "input-invariant",
+    "lang": "go",
+    "baseline": 5,
+    "kb_assisted": 0,
+    "delta": -5,
+    "kb_used": [
+      "BL-TRUST-CLIENT-INP-EXCESSIVE-TRUST-IN-CLIENT-SIDE-CONT",
+      "BL-TRUST-CLIENT-INP-HIGH-LEVEL",
+      "BL-UNCONVENTIONAL-I-LOW-LEVEL",
+      "BL-UNCONVENTIONAL-I-INCONSISTENT-HANDLING-OF-EXCEPTIONA"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-063",
+    "family": "input-invariant",
+    "lang": "typescript",
+    "baseline": 9,
+    "kb_assisted": 9,
+    "delta": 0,
+    "kb_used": [
+      "BL-DOMAIN-INVARIANT-LOGIC-FLAWS",
+      "BL-UNCONVENTIONAL-I-LOW-LEVEL"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-064",
+    "family": "input-invariant",
+    "lang": "java",
+    "baseline": 0,
+    "kb_assisted": 0,
+    "delta": 0,
+    "kb_used": [
+      "BL-UNCONVENTIONAL-I-LOW-LEVEL"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-065",
+    "family": "input-invariant",
+    "lang": "go",
+    "baseline": 8,
+    "kb_assisted": 8,
+    "delta": 0,
+    "kb_used": [
+      "BL-WORKFLOW-SEQUENC-INSUFFICIENT-WORKFLOW-VALIDATION",
+      "BL-DOMAIN-INVARIANT-LOGIC-FLAWS"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-066",
+    "family": "mass-assignment",
+    "lang": "typescript",
+    "baseline": 0,
+    "kb_assisted": 3,
+    "delta": 3,
+    "kb_used": [
+      "BL-INPUT-MASS-ASSIGNMENT",
+      "BL-AUTHZ-OBJECT-REFERENCE-IDOR"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-067",
+    "family": "mass-assignment",
+    "lang": "go",
+    "baseline": 9,
+    "kb_assisted": 9,
+    "delta": 0,
+    "kb_used": [
+      "BL-POLICY-AUTHORIZA-INCONSISTENT-SECURITY-CONTROLS"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-068",
+    "family": "mass-assignment",
+    "lang": "java",
+    "baseline": 9,
+    "kb_assisted": 2,
+    "delta": -7,
+    "kb_used": [],
+    "covered": false
+  },
+  {
+    "item_id": "VF-BL-069",
+    "family": "fail-open",
+    "lang": "go",
+    "baseline": 10,
+    "kb_assisted": 10,
+    "delta": 0,
+    "kb_used": [
+      "BL-AUTHZ-FAIL-OPEN-ON-POLICY-ERROR"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-070",
+    "family": "fail-open",
+    "lang": "typescript",
+    "baseline": 8,
+    "kb_assisted": 8,
+    "delta": 0,
+    "kb_used": [
+      "BL-AUTHZ-FAIL-OPEN-ON-POLICY-ERROR"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-071",
+    "family": "object-authz",
+    "lang": "go",
+    "baseline": 9,
+    "kb_assisted": 9,
+    "delta": 0,
+    "kb_used": [
+      "BL-AUTHZ-OBJECT-REFERENCE-IDOR",
+      "BL-AUTHN-MISSING-ON-DATA-ROUTE",
+      "BL-DISCLOSURE-CALLER-CONTROLLED-SCOPE"
+    ],
+    "covered": true
+  },
+  {
+    "item_id": "VF-BL-072",
+    "family": "object-authz",
+    "lang": "java",
+    "baseline": 10,
+    "kb_assisted": 10,
+    "delta": 0,
+    "kb_used": [
+      "BL-AUTHZ-OBJECT-REFERENCE-IDOR"
+    ],
+    "covered": true
+  }
+]

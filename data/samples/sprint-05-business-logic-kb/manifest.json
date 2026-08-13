@@ -23,16 +23,22 @@
   },
   "files": {
     "playbooks.jsonl": {
-      "records": 24,
-      "source_breakdown": {"portswigger": 21, "internal": 3},
+      "records": 29,
+      "source_breakdown": {"portswigger": 21, "internal": 3, "generalized_cwe_wstg": 5},
       "categories": [
         "trust_client_input",
         "unconventional_input",
         "workflow_sequence_violation",
         "domain_invariant_violation",
         "replay_idempotency",
-        "policy_authorization_inconsistency"
+        "policy_authorization_inconsistency",
+        "broken_object_authorization",
+        "excessive_data_exposure",
+        "mass_assignment",
+        "missing_authentication",
+        "fail_open"
       ],
+      "generalized_note": "5 playbook bổ sung sau benchmark HackerOne, viết theo lớp lỗi CWE + OWASP WSTG (không leak đáp án item).",
       "schema": "schemas/business_logic_playbook.schema.json"
     },
     "questions.jsonl": {
@@ -58,6 +64,17 @@
       "kb_assisted_avg": 10.0,
       "delta": 0.75,
       "note": "Δ dồn vào nhóm câu hỏi rule nội bộ (Q06–Q08: +2 mỗi câu); nhóm public (Q01–Q05) Δ=0 vì model đã học sẵn. FP 0/0. Chi tiết trong report_sprint05.md §5."
+    },
+    "hackerone/": {
+      "description": "Benchmark KB trên bộ HackerOne của mentor (dmk1en/business_flaws · items-hackerone, 23 item). Chi tiết trong report_hackerone_benchmark.md.",
+      "runner": "scripts/run_hackerone_benchmark.py",
+      "items_source": "external/business_flaws/items-hackerone (clone, gitignored — không tái publish)",
+      "rubric_max_per_item": 10,
+      "kb_v1": {"playbooks": 24, "baseline_avg": 7.39, "kb_assisted_avg": 7.30, "delta": -0.09},
+      "kb_v2": {"playbooks": 29, "baseline_avg": 7.26, "kb_assisted_avg": 7.30, "delta": 0.04},
+      "key_finding": "5 playbook generalized bổ sung được model trích ở 9/23 item; đảo ngược regression tệ nhất của v1 (over-disclosure -3.0 -> +3.0) và củng cố missing-authn (+3.0).",
+      "files": ["benchmark_runs.jsonl", "benchmark_summary.json", "coverage.json",
+                "benchmark_runs.kb_v1.jsonl", "benchmark_summary.kb_v1.json", "coverage.kb_v1.json"]
     }
   },
   "provenance_chain": "source_id → playbook_id → question_id → run_id → score",
